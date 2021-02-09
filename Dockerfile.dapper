@@ -94,9 +94,9 @@ RUN go get \
 
 # Build liblonghorn
 RUN cd /usr/src && \
-    git clone https://github.com/rancher/liblonghorn.git && \
+    git clone https://github.com/PhanLe1010/liblonghorn.git && \
     cd liblonghorn && \
-    git checkout 6592b9967d1b5acbb51a5596abfe0a0d7bad16dc && \
+    git checkout b974dc2f961ab30c45193dab429c66c990189708 && \
     make deb && \
     dpkg -i ./pkg/liblonghorn_*.deb
 

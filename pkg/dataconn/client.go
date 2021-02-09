@@ -81,7 +81,7 @@ func (c *Client) Ping() error {
 }
 
 func (c *Client) operation(op uint32, buf []byte, offset int64) (int, error) {
-	retry := 0
+	//retry := 0
 	for {
 		msg := Message{
 			Complete: make(chan struct{}, 1),
@@ -95,15 +95,15 @@ func (c *Client) operation(op uint32, buf []byte, offset int64) (int, error) {
 			msg.Data = buf
 		}
 
-		timeout := func(op uint32) <-chan time.Time {
-			switch op {
-			case TypeRead:
-				return time.After(opReadTimeout)
-			case TypeWrite:
-				return time.After(opWriteTimeout)
-			}
-			return time.After(opPingTimeout)
-		}(msg.Type)
+		//timeout := func(op uint32) <-chan time.Time {
+		//	switch op {
+		//	case TypeRead:
+		//		return time.After(opReadTimeout)
+		//	case TypeWrite:
+		//		return time.After(opWriteTimeout)
+		//	}
+		//	return time.After(opPingTimeout)
+		//}(msg.Type)
 
 		c.requests <- &msg
 
@@ -120,27 +120,27 @@ func (c *Client) operation(op uint32, buf []byte, offset int64) (int, error) {
 				return int(msg.Size), io.EOF
 			}
 			return int(msg.Size), nil
-		case <-timeout:
-			switch msg.Type {
-			case TypeRead:
-				logrus.Errorln("Read timeout on replica", c.TargetID(), "seq=", msg.Seq, "size=", msg.Size/1024, "(kB)")
-			case TypeWrite:
-				logrus.Errorln("Write timeout on replica", c.TargetID(), "seq=", msg.Seq, "size=", msg.Size/1024, "(kB)")
-			case TypePing:
-				logrus.Errorln("Ping timeout on replica", c.TargetID(), "seq=", msg.Seq)
-			}
-			if retry < opRetries {
-				retry++
-				logrus.Errorln("Retry ", retry, "on replica", c.TargetID(), "seq=", msg.Seq, "size=", msg.Size/1024, "(kB)")
-			} else {
-				err := ErrRWTimeout
-				if msg.Type == TypePing {
-					err = ErrPingTimeout
-				}
-				c.SetError(err)
-				journal.PrintLimited(1000) //flush automatically upon timeout
-				return 0, err
-			}
+			//case <-timeout:
+			//	switch msg.Type {
+			//	case TypeRead:
+			//		logrus.Errorln("Read timeout on replica", c.TargetID(), "seq=", msg.Seq, "size=", msg.Size/1024, "(kB)")
+			//	case TypeWrite:
+			//		logrus.Errorln("Write timeout on replica", c.TargetID(), "seq=", msg.Seq, "size=", msg.Size/1024, "(kB)")
+			//	case TypePing:
+			//		logrus.Errorln("Ping timeout on replica", c.TargetID(), "seq=", msg.Seq)
+			//	}
+			//	if retry < opRetries {
+			//		retry++
+			//		logrus.Errorln("Retry ", retry, "on replica", c.TargetID(), "seq=", msg.Seq, "size=", msg.Size/1024, "(kB)")
+			//	} else {
+			//		err := ErrRWTimeout
+			//		if msg.Type == TypePing {
+			//			err = ErrPingTimeout
+			//		}
+			//		c.SetError(err)
+			//		journal.PrintLimited(1000) //flush automatically upon timeout
+			//		return 0, err
+			//	}
 		}
 	}
 }

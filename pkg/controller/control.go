@@ -43,6 +43,7 @@ type Controller struct {
 
 	latestMetrics *types.Metrics
 	metrics       *types.Metrics
+	queueMetrics  *types.QueueMetrics
 
 	backupList      map[string]string
 	backupListMutex *sync.RWMutex
@@ -63,6 +64,7 @@ func NewController(name string, factory types.BackendFactory, frontend types.Fro
 		frontend:      frontend,
 		metrics:       &types.Metrics{},
 		latestMetrics: &types.Metrics{},
+		queueMetrics:  &types.QueueMetrics{},
 
 		backupList:      map[string]string{},
 		backupListMutex: &sync.RWMutex{},
@@ -685,6 +687,7 @@ func (c *Controller) Start(addresses ...string) error {
 }
 
 func (c *Controller) WriteAt(b []byte, off int64) (int, error) {
+	c.updateQueueMetrics(false, true, b)
 	c.RLock()
 	l := len(b)
 	if off < 0 || off+int64(l) > c.size {
@@ -698,11 +701,13 @@ func (c *Controller) WriteAt(b []byte, off int64) (int, error) {
 	if err != nil {
 		return n, c.handleError(err)
 	}
+	c.updateQueueMetrics(false, false, b)
 	c.recordMetrics(false, l, time.Now().Sub(startTime))
 	return n, err
 }
 
 func (c *Controller) ReadAt(b []byte, off int64) (int, error) {
+	c.updateQueueMetrics(true, true, b)
 	c.RLock()
 	l := len(b)
 	if off < 0 || off+int64(l) > c.size {
@@ -716,6 +721,7 @@ func (c *Controller) ReadAt(b []byte, off int64) (int, error) {
 	if err != nil {
 		return n, c.handleError(err)
 	}
+	c.updateQueueMetrics(true, false, b)
 	c.recordMetrics(true, l, time.Now().Sub(startTime))
 	return n, err
 }
@@ -861,12 +867,46 @@ func (c *Controller) recordMetrics(isRead bool, dataLength int, latency time.Dur
 	}
 }
 
+func (c *Controller) updateQueueMetrics(isRead bool, isEnqueue bool, b []byte) {
+	l := len(b)
+	if isRead {
+		if isEnqueue {
+			atomic.AddUint64(&c.queueMetrics.RQueueLength, 1)
+			atomic.AddUint64(&c.queueMetrics.RQueueSizeBytes, uint64(l))
+		} else {
+			atomic.AddUint64(&c.queueMetrics.RQueueLength, ^uint64(0))
+			atomic.AddUint64(&c.queueMetrics.RQueueSizeBytes, ^uint64(l-1))
+		}
+	} else {
+		if isEnqueue {
+			atomic.AddUint64(&c.queueMetrics.WQueueLength, 1)
+			atomic.AddUint64(&c.queueMetrics.WQueueSizeBytes, uint64(l))
+		} else {
+			atomic.AddUint64(&c.queueMetrics.WQueueLength, ^uint64(0))
+			atomic.AddUint64(&c.queueMetrics.WQueueSizeBytes, ^uint64(l-1))
+		}
+	}
+}
+
 func (c *Controller) metricsStart() {
 	go func() {
 		for {
 			time.Sleep(1 * time.Second)
 			c.latestMetrics = c.metrics
 			c.metrics = &types.Metrics{}
+			logrus.Infof("======================> metrics: [Bandwidth {R,W} TotalLatency{R,W} IOPS{R, W}]: %v", *c.latestMetrics)
+			logrus.Infof("======================> WQueue Length: %v", c.queueMetrics.WQueueLength)
+			if c.queueMetrics.WQueueLength > 0 {
+				logrus.Infof("======================> Avg Write Block Size: %v", c.queueMetrics.WQueueSizeBytes/c.queueMetrics.WQueueLength)
+			} else {
+				logrus.Infof("======================> Avg Write Block Size: %v", c.queueMetrics.WQueueSizeBytes)
+			}
+			logrus.Infof("======================> RQueue Length: %v", c.queueMetrics.RQueueLength)
+			if c.queueMetrics.RQueueLength > 0 {
+				logrus.Infof("======================> Avg Read Block Size: %v", c.queueMetrics.RQueueSizeBytes/c.queueMetrics.RQueueLength)
+			} else {
+				logrus.Infof("======================> Avg Read Block Size: %v", c.queueMetrics.RQueueSizeBytes)
+			}
 		}
 	}()
 }

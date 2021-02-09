@@ -134,6 +134,13 @@ type RWMetrics struct {
 	Write uint64
 }
 
+type QueueMetrics struct {
+	RQueueLength    uint64
+	RQueueSizeBytes uint64
+	WQueueLength    uint64
+	WQueueSizeBytes uint64
+}
+
 func IsAlreadyPurgingError(err error) bool {
 	return strings.Contains(err.Error(), "already purging")
 }
