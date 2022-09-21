@@ -752,6 +752,7 @@ func (c *Controller) WriteAt(b []byte, off int64) (int, error) {
 		return 0, err
 	}
 	startTime := time.Now()
+	logrus.Infof("==============> buffe length: %v, offset: %v", len(b), off)
 	var n int
 	var err error
 	if c.hasWOReplica() {
@@ -769,7 +770,7 @@ func (c *Controller) WriteAt(b []byte, off int64) (int, error) {
 
 func (c *Controller) writeInWOMode(b []byte, off int64) (int, error) {
 	bufLen := int64(len(b))
-	// buffer b is sectorSize aligned
+	// buffer b is defaultSectorSize aligned
 	if (bufLen >= defaultSectorSize) && (off%defaultSectorSize == 0) && ((off+bufLen)%defaultSectorSize == 0) {
 		return c.backend.WriteAt(b, off)
 	}
