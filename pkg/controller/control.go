@@ -215,12 +215,14 @@ func (c *Controller) Snapshot(name string, labels map[string]string) (string, er
 }
 
 func (c *Controller) Expand(size int64) error {
+	logrus.Info("=====================> 0001")
 	if err := c.startExpansion(size); err != nil {
 		logrus.WithError(err).Error("Controller failed to start expansion")
 		return err
 	}
 
 	go func(size int64) {
+		logrus.Info("=====================> 0002")
 		expanded := false
 		defer func() {
 			// Frontend expansion involves in the iSCSI session rescanning, which will wait for the in-fly io requests complete.
@@ -234,6 +236,7 @@ func (c *Controller) Expand(size int64) error {
 			c.finishExpansion(expanded, size)
 		}()
 
+		logrus.Info("=====================> 0003")
 		// We perform a system level sync without the lock. Cannot block read/write
 		// Can be improved to only sync the filesystem on the block device later
 		if ne, err := iutil.NewNamespaceExecutor(util.GetInitiatorNS()); err != nil {
@@ -245,9 +248,14 @@ func (c *Controller) Expand(size int64) error {
 			}
 		}
 
+		logrus.Info("=====================> 0004")
+
 		// Should block R/W during the expansion.
 		c.Lock()
 		defer c.Unlock()
+
+		logrus.Info("=====================> 005")
+
 		if _, err := c.backend.RemainSnapshots(); err != nil {
 			logrus.WithError(err).Error("Cannot get remain snapshot count before expansion")
 			return
