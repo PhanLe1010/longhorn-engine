@@ -391,19 +391,24 @@ func (r *Replica) ReplaceDisk(target, source string) error {
 		return err
 	}
 
+	logrus.Info("============> ReplaceDisk: 1")
+
 	// the target file handler need to be refreshed for the hard linked disk
 	index := r.findDisk(target)
 	if index <= 0 {
 		return nil
 	}
+	logrus.Info("============> ReplaceDisk: 2")
 	if err := r.volume.files[index].Close(); err != nil {
 		return err
 	}
+	logrus.Info("============> ReplaceDisk: 3")
 	newFile, err := r.openFile(r.activeDiskData[index].Name, 0)
 	if err != nil {
 		return err
 	}
 	r.volume.files[index] = newFile
+	logrus.Info("============> ReplaceDisk: 4")
 
 	logrus.Infof("Done replacing disk %v with %v", source, target)
 
@@ -804,20 +809,25 @@ func (r *Replica) rmDisk(name string) error {
 	logrus.Infof("Removing disk %v", name)
 
 	diskPath := r.diskPath(name)
+	logrus.Info("============> rmDisk: 1")
 	lastErr := os.RemoveAll(diskPath)
+	logrus.Info("============> rmDisk: 2")
 	if lastErr != nil {
 		logrus.WithError(lastErr).Errorf("Failed to remove disk file %v", diskPath)
 	}
+	logrus.Info("============> rmDisk: 3")
 	diskMetaPath := r.diskPath(name + diskutil.DiskMetadataSuffix)
 	if err := os.RemoveAll(diskMetaPath); err != nil {
 		lastErr = err
 		logrus.WithError(lastErr).Errorf("Failed to remove disk metadata file %v", diskMetaPath)
 	}
+	logrus.Info("============> rmDisk: 4")
 	diskChecksumPath := r.diskPath(name + diskutil.DiskChecksumSuffix)
 	if err := os.RemoveAll(diskChecksumPath); err != nil {
 		lastErr = err
 		logrus.WithError(lastErr).Errorf("Failed to remove disk checksum file %v", diskChecksumPath)
 	}
+	logrus.Info("============> rmDisk: 5")
 	return lastErr
 }
 
