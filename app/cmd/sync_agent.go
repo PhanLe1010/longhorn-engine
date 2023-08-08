@@ -3,7 +3,9 @@ package cmd
 import (
 	"context"
 	"fmt"
+	"log"
 	"net"
+	"net/http"
 	"strconv"
 	"strings"
 
@@ -16,6 +18,8 @@ import (
 	"github.com/longhorn/longhorn-engine/pkg/sync"
 	syncagentrpc "github.com/longhorn/longhorn-engine/pkg/sync/rpc"
 	"github.com/longhorn/longhorn-engine/proto/ptypes"
+
+	_ "net/http/pprof"
 )
 
 func SyncAgentCmd() cli.Command {
@@ -85,6 +89,10 @@ func startSyncAgent(c *cli.Context) error {
 	reflection.Register(server)
 
 	logrus.Infof("Listening on sync %s", listenPort)
+
+	go func() {
+		log.Println(http.ListenAndServe("localhost:6060", nil))
+	}()
 
 	return server.Serve(listen)
 }
