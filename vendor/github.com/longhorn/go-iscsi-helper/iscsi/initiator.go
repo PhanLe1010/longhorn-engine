@@ -49,9 +49,12 @@ func DiscoverTarget(ip, target string, ne *util.NamespaceExecutor) error {
 		"-p", ip,
 	}
 	output, err := ne.Execute(iscsiBinary, opts)
+	logrus.Infof("===================> DiscoverTarget: %v", output)
 	if err != nil {
 		return err
 	}
+
+
 	// Sometime iscsiadm won't return error but showing e.g.:
 	//  iscsiadm: Could not stat /etc/iscsi/nodes//,3260,-1/default to
 	//  delete node: No such file or directory\n\niscsiadm: Could not
@@ -103,12 +106,15 @@ func LoginTarget(ip, target string, ne *util.NamespaceExecutor) error {
 		"-m", "node",
 		"-T", target,
 		"-p", ip,
+		"-d", "8",
 		"--login",
 	}
-	_, err := ne.Execute(iscsiBinary, opts)
+	output, err := ne.Execute(iscsiBinary, opts)
 	if err != nil {
 		return err
 	}
+
+	logrus.Infof("===========> LoginTarget %v", output)
 
 	scanMode, err := getIscsiNodeSessionScanMode(ip, target, ne)
 	if err != nil {
