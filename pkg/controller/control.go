@@ -962,6 +962,21 @@ func (c *Controller) Start(volumeSize, volumeCurrentSize int64, addresses ...str
 		}
 	}
 
+	go func() {
+		ticker := time.NewTicker(5 * time.Second)
+		defer ticker.Stop()
+		tick := ticker.C
+
+		for {
+			select {
+			case <-tick:
+				logrus.Infof("============> totalReadReplica1 %v", totalReadReplica1)
+				logrus.Infof("============> totalReadReplica2 %v", totalReadReplica2)
+				logrus.Infof("============> totalReadReplica3 %v", totalReadReplica3)
+			}
+		}
+	}()
+
 	return c.startFrontend()
 }
 

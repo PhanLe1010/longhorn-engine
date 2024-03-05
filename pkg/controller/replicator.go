@@ -26,6 +26,7 @@ type replicator struct {
 	writer            io.WriterAt
 	unmapper          types.UnmapperAt
 	next              int
+	totalReadByte     map[int]int64
 }
 
 type BackendError struct {
@@ -89,6 +90,8 @@ func (r *replicator) RemoveBackend(address string) {
 	r.buildReaderWriterUnmappers()
 }
 
+var totalReadReplica1, totalReadReplica2, totalReadReplica3 int64
+
 func (r *replicator) ReadAt(buf []byte, off int64) (int, error) {
 	var (
 		n   int
@@ -106,6 +109,16 @@ func (r *replicator) ReadAt(buf []byte, off int64) (int, error) {
 		Errors: map[string]error{},
 	}
 	for i := 0; i < readersLen; i++ {
+		logrus.Infof("================> replica %v, offset %v, len %v", index, off, len(buf))
+		r.totalReadByte[index] += r.totalReadByte[index] + int64(len(buf))
+		if index == 0 {
+			totalReadReplica1 += int64(len(buf))
+		} else if index == 1 {
+			totalReadReplica2 += int64(len(buf))
+		} else if index == 2 {
+			totalReadReplica3 += int64(len(buf))
+		}
+
 		reader := r.readers[index]
 		n, err = reader.ReadAt(buf, off)
 		if err == nil {
@@ -342,6 +355,7 @@ func (r *replicator) reset(full bool) {
 	r.writerIndex = map[int]string{}
 	r.readerIndex = map[int]string{}
 	r.unmapperIndex = map[int]string{}
+	r.totalReadByte = map[int]int64{}
 
 	if full {
 		r.backends = nil
