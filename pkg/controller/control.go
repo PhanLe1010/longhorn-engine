@@ -646,8 +646,9 @@ func (c *Controller) salvageRevisionCounterDisabledReplicas() error {
 		// Any replica within 5 seconds before lastModifyTime
 		// can be good replica.
 		if t.Add(lastModifyCheckPeriod).After(lastTime) {
-			if salvageReplica.HeadFileSize >= largestSize {
+			if salvageReplica.HeadFileSize > largestSize {
 				bestCandidate = r
+				largestSize = salvageReplica.HeadFileSize
 			}
 		}
 	}
