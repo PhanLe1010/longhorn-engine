@@ -176,13 +176,17 @@ func getVolumeFilePath(volumeName string) string {
 
 // getVolumeNames returns all volume names based on the folders on the backupstore
 func getVolumeNames(jobQueues *workerpool.WorkerPool, driver BackupStoreDriver) ([]string, error) {
+
 	names := []string{}
 	volumePathBase := filepath.Join(backupstoreBase, VOLUME_DIRECTORY)
+	logrus.Infof("==============> driver.GetURL: %v", driver.GetURL())
+	logrus.Infof("==============> volumePathBase: %v", volumePathBase)
 	lv1Dirs, err := driver.List(volumePathBase)
 	if err != nil {
 		log.WithError(err).Warnf("Failed to list first level dirs for path %v", volumePathBase)
 		return names, err
 	}
+	logrus.Infof("==============> lv1Dirs: %v", lv1Dirs)
 
 	var errs []string
 	lv1Trackers := make(chan types.JobResult)
@@ -236,6 +240,7 @@ func getVolumeNames(jobQueues *workerpool.WorkerPool, driver BackupStoreDriver) 
 		lv2Paths := payload.([]string)
 		lv2PathsNum += len(lv2Paths)
 		for _, lv2Path := range lv2Paths {
+			logrus.Infof("==============> lv2Path: %v", lv2Path)
 			path := lv2Path
 			jobQueues.Submit(func() {
 				var volumeNames []string
@@ -254,6 +259,7 @@ func getVolumeNames(jobQueues *workerpool.WorkerPool, driver BackupStoreDriver) 
 					}
 					return
 				}
+				logrus.Infof("==============> volumeNames: %v from path %v", volumeNames, path)
 				lv2Trackers <- types.JobResult{
 					Payload: volumeNames,
 					Err:     nil,
@@ -277,6 +283,9 @@ func getVolumeNames(jobQueues *workerpool.WorkerPool, driver BackupStoreDriver) 
 	if len(errs) > 0 {
 		return names, errors.New(strings.Join(errs, "\n"))
 	}
+
+	logrus.Infof("==============> the returned list of all volume names: %v", names)
+
 	return names, nil
 }
 

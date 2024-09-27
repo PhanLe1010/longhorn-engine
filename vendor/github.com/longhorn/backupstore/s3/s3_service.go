@@ -86,12 +86,17 @@ func (s *Service) ListObjects(key, delimiter string) ([]*s3.Object, []*s3.Common
 		Delimiter: aws.String(delimiter),
 	}
 
+	fmt.Printf("======================> Bucket %v \n", s.Bucket)
+	fmt.Printf("======================> Prefix %v \n", key)
+
 	var (
 		objects       []*s3.Object
 		commonPrefixs []*s3.CommonPrefix
 	)
 	err = svc.ListObjectsPages(params, func(page *s3.ListObjectsOutput, lastPage bool) bool {
 		objects = append(objects, page.Contents...)
+		fmt.Printf("======================> page.Contents %v \n ", page.Contents)
+		fmt.Printf("======================> objects %v \n", objects)
 		commonPrefixs = append(commonPrefixs, page.CommonPrefixes...)
 		return !lastPage
 	})
@@ -99,6 +104,7 @@ func (s *Service) ListObjects(key, delimiter string) ([]*s3.Object, []*s3.Common
 		return nil, nil, fmt.Errorf("failed to list objects with param: %+v error: %v",
 			params, parseAwsError(err))
 	}
+	fmt.Printf("======================> objects %v \n", objects)
 	return objects, commonPrefixs, nil
 }
 

@@ -123,6 +123,7 @@ func (s *BackupStoreDriver) List(listPath string) ([]string, error) {
 	if !strings.HasSuffix(path, "/") {
 		path += "/"
 	}
+	logrus.Infof("===================> List.path %v", path)
 	contents, prefixes, err := s.service.ListObjects(path, "/")
 	if err != nil {
 		log.WithError(err).Error("Failed to list s3")
