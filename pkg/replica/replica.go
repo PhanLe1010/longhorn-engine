@@ -29,7 +29,7 @@ import (
 const (
 	volumeMetaData = "volume.meta"
 
-	maximumChainLength = 250
+	maximumChainLength = 255
 
 	tmpFileSuffix = ".tmp"
 
